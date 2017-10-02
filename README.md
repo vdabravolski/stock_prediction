@@ -1,8 +1,5 @@
-# Content: Specializations
-## Project: Capstone Proposal and Capstone Project
-
 ## Capstone Proposal Overview
-In my capstone project, I’d like to explore a possibility to forecast stock price trend
+In my Udacity capstone project, I’d like to explore a possibility to forecast stock price trend
 using machine learning techniques (such as word vector embeddings and Recurrent
 Neural Networks).
 
