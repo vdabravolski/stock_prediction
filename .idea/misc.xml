@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PreferredVcsStorage">
+    <preferredVcsName>ApexVCS</preferredVcsName>
+  </component>
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.5.2 (/anaconda/envs/data3/bin/python3.5)" project-jdk-type="Python SDK" />
+  <component name="PyConsoleOptionsProvider">
+    <option name="myPythonConsoleState">
+      <console-settings is-module-sdk="true">
+        <envs>
+          <env key="BLPAPI_ROOT" value="/Users/vadzimdabravolski/machine-learning/projects/capstone/libs/blpapi_cpp_3.8.1.1/" />
+          <env key="DYLD_LIBRARY_PATH" value="/Users/vadzimdabravolski/machine-learning/projects/capstone/libs/blpapi_cpp_3.8.1.1/Darwin/" />
+        </envs>
+        <option name="myUseModuleSdk" value="true" />
+        <option name="myEnvs">
+          <map>
+            <entry key="BLPAPI_ROOT" value="$USER_HOME$/machine-learning/projects/capstone/libs/blpapi_cpp_3.8.1.1/" />
+            <entry key="DYLD_LIBRARY_PATH" value="$USER_HOME$/machine-learning/projects/capstone/libs/blpapi_cpp_3.8.1.1/Darwin/" />
+          </map>
+        </option>
+      </console-settings>
+    </option>
+  </component>
+</project>

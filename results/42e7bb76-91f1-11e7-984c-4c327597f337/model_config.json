@@ -1,0 +1,1 @@
+{"optimizer": "adam", "epochs": 1, "name": "complex_model", "loss": "mean_squared_error", "ts_config": {"stateful": true, "timesteps": 20, "batch_size": 16, "name": "ts_branch", "dense_shapes": [20, 1], "activation": "linear", "lstm_shapes": [100, 50, 20], "return_sequence": true, "output": 1, "features": 5, "go_backwards": true}}
