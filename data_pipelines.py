@@ -168,7 +168,7 @@ def news_data_pipeline(drop_news=True, ticker_list=None):
 
 
 def _convert_labels_news(close_previous_day, close_day, close_next_day):
-    # handling cases when we don't have prices for a given day
+    # handling cas0.00475037es when we don't have prices for a given day
     close_day = 0 if len(close_day) == 0 else close_day[0]
     close_next_day = 0 if len(close_next_day) == 0 else close_next_day[0]
     close_previous_day = 0 if len(close_previous_day) == 0 else close_previous_day[0]
@@ -190,7 +190,10 @@ def convert_data_to_batch_timesteps(data, batch_size, timesteps, features, time_
         data_time_slice = data
 
     # Dropping "date" column as we no longer need it.
-    data_time_slice = data_time_slice.drop(labels='date', axis=1)
+    try:
+        data_time_slice = data_time_slice.drop(labels='date', axis=1)
+    except:
+        print("Date column not found, carry on.")
 
     augmented_df = pd.DataFrame()  # initate new
     # for idx in range(data_time_slice.shape[0] - timesteps - 1):
@@ -226,11 +229,10 @@ def convert_ts_to_categorial(data_df, timesteps):
         'date' - contains date
     """
 
-    diff_bool = data_df.close[(timesteps + 1):].reset_index(drop=True) > data_df.close[timesteps:-1].reset_index(
-        drop=True)
+    diff_bool = data_df.adj_close[timesteps:].reset_index(drop=True) > data_df.adj_close[(timesteps-1):-1].reset_index(drop=True)
     diff_bool = diff_bool.astype(int)  # converting boolean value to integer
-    value = data_df.close[(timesteps + 1):].reset_index(drop=True)
-    date = data_df.date[(timesteps + 1):].reset_index(drop=True)
+    value = data_df.adj_close[timesteps:].reset_index(drop=True)
+    date = data_df.date[timesteps:].reset_index(drop=True)
     target_df = pd.concat([diff_bool.rename('close_bool'), value, date], axis=1).reset_index(drop=True)
 
     return target_df
