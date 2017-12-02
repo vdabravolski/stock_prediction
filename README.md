@@ -1,8 +1,5 @@
-# Content: Specializations
-## Project: Capstone Proposal and Capstone Project
-
 ## Capstone Proposal Overview
-In my capstone project, I’d like to explore a possibility to forecast stock price trend
+In my Udacity capstone project, I’d like to explore a possibility to forecast stock price trend
 using machine learning techniques (such as word vector embeddings and Recurrent
 Neural Networks).
 
@@ -46,7 +43,7 @@ published by SEC (available via this API).
 - General company information is captured in company profile (available on Yahoo
 Finance)
 
-##Project Design
+## Project Design
 The idea behind this proposal to build a complex machine
 learning model which will account for various factors which influence on stock
 movements. As the different factors has very different dataset (different sources and
@@ -57,7 +54,7 @@ Model selections
 ![GitHub Logo](initial_analysis/diagram.png)
 
 
-####Model selections
+### Model selections
 * **Word embeddings**. I spent some time choosing between word2vec and GloVe
 embeddings. Based on some of the published cases, both embeddings seems to
 have similar performance. So I chose GloVe as it’s a bit easy to parallelize in
@@ -77,7 +74,7 @@ meaning of the phrase)
   * Can learn the temporal context of the sequence. So this avoid creating a
 fixed lag data sets.
 
-##Status
+## Status
 This is work-in-progress project.
 
  
