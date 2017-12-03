@@ -1,6 +1,7 @@
 import numpy as np
 
 import matplotlib.pyplot as pyplot
+from keras.regularizers import L1L2
 from keras.utils import to_categorical
 from sklearn.preprocessing import scale
 from keras.models import Sequential
@@ -142,6 +143,7 @@ def ts_model_branch(classification=True):
     c['return_sequence'] = True
     c['stateful'] = False
     c['output'] = 1
+    c['regularization'] = reg
 
     ## Explanations of return_sequence and TimeDistributed: https://stackoverflow.com/questions/42755820/how-to-use-return-sequences-option-and-timedistributed-layer-in-keras
     ## EXplanations of stateful parameter: http://philipperemy.github.io/keras-stateful-lstm/
@@ -150,11 +152,11 @@ def ts_model_branch(classification=True):
     branch = Sequential()
     branch.add(LSTM(c['lstm_shapes'][0], batch_input_shape=(c['batch_size'], c['timesteps'], c['features']),
                     return_sequences=c['return_sequence'], stateful=c['stateful'], name="lstm_1",
-                    go_backwards=c['go_backwards']))
+                    go_backwards=c['go_backwards'], kernel_regularizer=c['regularization']))
     branch.add(LSTM(c['lstm_shapes'][0],
                     return_sequences=c['return_sequence'], name="lstm_2", stateful=c['stateful']))
     branch.add(LSTM(c['lstm_shapes'][0],
-                    return_sequences=False, name="lstm_3", stateful=c['stateful']))
+                    return_sequences=False, name="lstm_3", stateful=c['stateful'], kernel_regularizer=c['regularization']))
     branch.add(Dense(units=c['dense_shapes'][0], activation=c['activation'], name="dense_1"))
     if classification:
         branch.add(Dense(units=c['dense_shapes'][1], activation='sigmoid', name="dense_2"))
@@ -177,7 +179,7 @@ def nlp_branch_model():
 
 
 
-def training_model(ticker, epochs, classification, result_folder):
+def training_model(ticker, epochs, classification, result_folder, load_weights = False, save_weights = False):
     """method to train the model"""
 
     # Initialize complex model.
@@ -196,35 +198,51 @@ def training_model(ticker, epochs, classification, result_folder):
                           classification=classification)
 
     model.summary()
+
+
     print("Inputs: {}".format(model.input_shape))
     print("Outputs: {}".format(model.output_shape))
-
-    # fit network
     # TODO: Not clear, how to sync up batch sizes across multiple branches
+
+
+    if load_weights:
+        try:
+            weights_file = result_folder+'model_weights.h5'
+            model.load_weights(weights_file)
+            print("Loading pre-trained weights")
+        except Exception:
+            print("ERROR: failed to load weights file {0}. Proceed training from scratch".format(weights_file))
 
     loss = []
     val_loss = []
 
+    # fit network
     for _ in range(model_config['epochs']):
+
         history = model.fit(TS_X_train, TS_Y_train, epochs=1, batch_size=model_config['ts_config']['batch_size'],
                             validation_data=(TS_X_test, TS_Y_test), verbose=2, shuffle=False)
         loss.append(history.history['loss'])
         val_loss.append(history.history['val_loss'])
         model.reset_states()
 
-    #
+
+    if save_weights:
+        model.save_weights(result_folder+'model_weights.h5')
+
+
     # # plot history
     pyplot.plot(loss, label='train')
     pyplot.plot(val_loss, label='test')
     pyplot.legend()
     pyplot.interactive(False)
-    pyplot.savefig(result_folder + "loss_chart.png")
+    pyplot.savefig(result_folder + "{0}_loss_chart.png".format(ticker))
     pyplot.close()
 
     return model, model_config
 
 
-def evaluate_model(model, X, Y, result_folder, classification=True, labels=['true', 'predicted']):
+def evaluate_model(model, X, Y, result_folder, ticker, classification=True, labels=['true', 'predicted']):
+
     time_series = list(range(X.shape[0]))
 
     if classification:
@@ -254,13 +272,17 @@ def evaluate_model(model, X, Y, result_folder, classification=True, labels=['tru
 
     else:
         Y_pred = model.predict(X, batch_size=batch_size)
+        mae_score = model.evaluate(X, Y, batch_size=batch_size)[1] # evaluate returns loss and mae.
         pyplot.plot(time_series, Y, label=labels[0])
         pyplot.plot(time_series, Y_pred, label=labels[1])
 
+
     pyplot.legend()
     pyplot.interactive(False)
-    pyplot.savefig(result_folder + "{0}_vs_{1}.png".format(labels[0], labels[1]))
+    pyplot.savefig(result_folder + "{0}_{1}_vs_{2}.png".format(ticker, labels[0], labels[1]))
     pyplot.close()
+
+    return mae_score
 
 
 def get_sample_data(ticker, sample_size):
@@ -330,50 +352,63 @@ def get_synthetic_data(batch_size, timesteps, features, type="cos"):
     return X_train, Y_train, X_test, Y_test, X_val, Y_val
 
 
+
+
 # TODO: Watch out. Global variables.
 batch_size = 32
 timesteps = 16
 train_test_val_ratio = [0.6, 0.3, 0.1]
 classification = False  # if classification True, then model is trained to predict whether
                        # the stock will be up or down. Otherwise, it's trained on regression.
-epochs = 40
+epochs = 70
 is_synthetic_data = False
 ticker = 'FB'
+# reg = [L1L2(l1=0.0, l2=0.0), L1L2(l1=0.01, l2=0.0), L1L2(l1=0.0, l2=0.01), L1L2(l1=0.01, l2=0.01)]
+reg = None
+                                                                # bias weight regularization;
+                                                                # input weight regularization;
+                                                                # recurrect weight regularization;
+experiments = 10
+
 
 if __name__ == '__main__':
     # Runtime configs
     result_folder = _prepare_results_folder(ticker)
-
-    model, config = training_model(ticker, epochs=epochs, classification=classification, result_folder=result_folder)
+    error_score = pd.DataFrame()
 
     if is_synthetic_data:
         TS_X_train, TS_Y_train, TS_X_test, TS_Y_test, TS_X_val, TS_Y_val = \
             get_synthetic_data(batch_size, timesteps, features=1)
 
-        evaluate_model(model, X=TS_X_val, Y=TS_Y_val, result_folder=result_folder, labels=['val_true', 'val_predicted'],
-                       classification=classification)
-        evaluate_model(model, X=TS_X_test, Y=TS_Y_test, result_folder=result_folder,
-                       labels=['test_true', 'test_predicted'],
-                       classification=classification)
 
     else:
         TS_X_train, TS_Y_train, TS_X_test, TS_Y_test, TS_X_val, TS_Y_val = \
             get_formated_data(ticker, train_test_val_ratio=[0.6, 0.3, 0.1], output_shape=(batch_size, timesteps, 5),
                               classification=classification)
 
-        evaluate_model(model, X=TS_X_val, Y=TS_Y_val, result_folder=result_folder, labels=['val_true', 'val_predicted'],
-                       classification=classification)
-        evaluate_model(model, X=TS_X_test, Y=TS_Y_test, result_folder=result_folder,
-                       labels=['test_true', 'test_predicted'],
-                       classification=classification)
 
+    val_score = []
+    test_score = []
+    for _ in range(experiments):
 
+        model, config = training_model(ticker, epochs=epochs, classification=classification, result_folder=result_folder)
+        val_score.append(
+            evaluate_model(model, X=TS_X_val, Y=TS_Y_val, result_folder=result_folder, ticker=ticker,
+                           classification=classification, labels=['val_true', 'val_predicted']))
+        test_score.append(
+            evaluate_model(model, X=TS_X_test, Y=TS_Y_test, result_folder=result_folder, ticker=ticker,
+                           classification=classification, labels=['test_true', 'test_predicted']))
 
-
-
+    error_score['validation'] = val_score
+    error_score['test'] = test_score
+    error_score.boxplot()
+    pyplot.savefig(result_folder+'average_error_score.png')
 
     config['runtime'] = {'ticker': ticker}  # adding some runtime parameters to config dump
     config['model'] = model.to_json()  # adding model description to config dump
     _dump_config(result_folder, config)
 
     print(result_folder)
+
+
+
